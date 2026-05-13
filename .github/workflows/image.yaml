@@ -1,0 +1,158 @@
+name: Build and Push Container Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      images:
+        description: 'Comma-separated list of image directories'
+        required: false
+        default: ''
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.set-matrix.outputs.images }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed and manual image directories
+        id: find-directories
+        env:
+          MANUAL_IMAGES: ${{ github.event.inputs.images }}
+        run: |
+          case "${{ github.event_name }}" in
+            pull_request)
+              base="${{ github.event.pull_request.base.sha }}"
+              head="${{ github.event.pull_request.head.sha }}"
+              ;;
+            push)
+              base="${{ github.event.before }}"
+              head="${{ github.sha }}"
+              if [ "$base" = "0000000000000000000000000000000000000000" ]; then
+                base=""
+              fi
+              ;;
+            *)
+              base=""
+              head=""
+              ;;
+          esac
+
+          files=$(find images/ -name Dockerfile)
+          changedDirectories=""
+          if [ -n "$base" ] && [ -n "$head" ]; then
+            git fetch --no-tags --depth=1 origin "$base" "$head" || git fetch origin
+            changedDirectories=$(
+              for file in $files; do
+                directory=$(dirname "$file")
+                if ! git diff --exit-code --name-only "$base" "$head" -- "$directory/" &>/dev/null; then
+                  echo "$directory"
+                fi
+              done
+            )
+          fi
+
+          if [ -z "$changedDirectories" ] && [ -n "$MANUAL_IMAGES" ]; then
+            manualDirectories=$(echo "$MANUAL_IMAGES" | tr ',' '\n')
+            changedDirectories=$(for directory in $manualDirectories; do
+              if [ -f "images/$directory/Dockerfile" ]; then
+                echo "images/$directory"
+              fi
+            done | sort -u)
+          fi
+
+          directories=$(echo "$changedDirectories" | jq -Rsc 'split("\n") | map(select(length > 0))')
+
+          echo "Final changed directories: $directories"
+          echo "directories=$directories" >> $GITHUB_OUTPUT
+
+      - name: Set matrix
+        id: set-matrix
+        env:
+          DIRECTORIES: ${{ steps.find-directories.outputs.directories }}
+        run: |
+          images=$(echo "$DIRECTORIES" |
+            jq -c 'map({dockerfile: (. + "/Dockerfile"), context: ., name: (sub("^images/";"") | gsub("/"; "-"))})')
+          echo "images=$images" >> $GITHUB_OUTPUT
+
+  build:
+    name: build (${{ matrix.name }})
+    needs: [setup]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.setup.outputs.images) }}
+    permissions:
+      contents: read
+      packages: write
+    if: ${{ needs.setup.outputs.images != '[]' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine date tag
+        id: date-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          today=$(date -u +%Y%m%d)
+
+          existing=$(gh api --paginate "/orgs/ofskills/packages/images/${{ matrix.name }}/versions" \
+            --jq '.[].metadata.container.tags[]' 2>/dev/null || true)
+
+          if ! echo "$existing" | grep -qx "$today"; then
+            echo "tag=${today}" >> "$GITHUB_OUTPUT"
+          else
+            n=2
+            while echo "$existing" | grep -qx "${today}-${n}"; do
+              n=$((n + 1))
+            done
+            echo "tag=${today}-${n}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/ofskills/${{ matrix.name }}
+          tags: |
+            type=sha
+            type=raw,value=${{ steps.date-tag.outputs.tag }},enable={{is_default_branch}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
