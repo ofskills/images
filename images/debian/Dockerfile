@@ -43,6 +43,7 @@ RUN ln -sf /usr/share/zoneinfo/UTC /etc/localtime && \
     echo "UTC" > /etc/timezone
 
 RUN systemctl mask \
+      systemd-modules-load.service \
       sys-kernel-debug.mount \
       sys-kernel-tracing.mount \
       sys-kernel-config.mount \
