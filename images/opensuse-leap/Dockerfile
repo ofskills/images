@@ -43,7 +43,8 @@ RUN systemctl mask \
       sys-kernel-config.mount \
       purge-kernels.service
 
-RUN useradd --create-home --shell /bin/bash user && \
+RUN groupadd -f wheel && \
+    useradd --create-home --shell /bin/bash user && \
     usermod -aG wheel user && \
     mkdir -p /home/user/.ssh && \
     chown user:user /home/user/.ssh && \
@@ -57,6 +58,7 @@ RUN ansible-playbook -i localhost, ansible.yaml -c local && \
     rm ansible.yaml
 
 RUN : > /etc/machine-id && \
+    mkdir -p /var/lib/dbus && \
     rm -f /var/lib/dbus/machine-id && \
     ln -s /etc/machine-id /var/lib/dbus/machine-id
 
