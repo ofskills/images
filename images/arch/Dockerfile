@@ -59,6 +59,7 @@ RUN ansible-playbook -i localhost, ansible.yaml -c local && \
     rm ansible.yaml
 
 RUN : > /etc/machine-id && \
+    mkdir -p /var/lib/dbus && \
     rm -f /var/lib/dbus/machine-id && \
     ln -s /etc/machine-id /var/lib/dbus/machine-id
 
