@@ -23,7 +23,8 @@ RUN dnf install -y --allowerasing --setopt=install_weak_deps=False \
       procps-ng \
       wget && \
     rm -f /etc/ssh/ssh_host_*_key* && \
-    echo "ReadKMsg=no" >> /etc/systemd/journald.conf && \
+    mkdir -p /etc/systemd/journald.conf.d && \
+    printf '[Journal]\nReadKMsg=no\n' > /etc/systemd/journald.conf.d/00-no-kmsg.conf && \
     dnf clean all && \
     rm -rf \
       /var/cache/dnf/* \

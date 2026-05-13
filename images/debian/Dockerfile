@@ -25,7 +25,8 @@ RUN apt-get update && \
       procps \
       wget && \
     rm -f /etc/ssh/ssh_host_*_key* && \
-    echo "ReadKMsg=no" >> /etc/systemd/journald.conf && \
+    mkdir -p /etc/systemd/journald.conf.d && \
+    printf '[Journal]\nReadKMsg=no\n' > /etc/systemd/journald.conf.d/00-no-kmsg.conf && \
     apt-get clean -y && \
     rm -rf \
       /var/lib/apt/lists/* \
