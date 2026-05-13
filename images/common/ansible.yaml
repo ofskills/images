@@ -2,11 +2,29 @@
 - hosts: all
   become: yes
   tasks:
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: yes
-        cache_valid_time: 3600
-        force_apt_get: yes
+    - name: Update package cache
+      block:
+        - name: Update apt cache
+          ansible.builtin.apt:
+            update_cache: yes
+            cache_valid_time: 3600
+            force_apt_get: yes
+          when: ansible_pkg_mgr == 'apt'
+
+        - name: Update dnf cache
+          ansible.builtin.dnf:
+            update_cache: yes
+          when: ansible_pkg_mgr == 'dnf'
+
+        - name: Update dnf5 cache
+          ansible.builtin.dnf5:
+            update_cache: yes
+          when: ansible_pkg_mgr == 'dnf5'
+
+        - name: Update pacman cache
+          community.general.pacman:
+            update_cache: yes
+          when: ansible_pkg_mgr == 'pacman'
 
     - name: Install required packages
       ansible.builtin.package:
