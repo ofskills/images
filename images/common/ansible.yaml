@@ -26,6 +26,11 @@
             update_cache: yes
           when: ansible_pkg_mgr == 'pacman'
 
+        - name: Update zypper cache
+          ansible.builtin.command: zypper --non-interactive refresh
+          changed_when: false
+          when: ansible_pkg_mgr == 'zypper'
+
     - name: Install required packages
       ansible.builtin.package:
         name:
