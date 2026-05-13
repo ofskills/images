@@ -1,0 +1,4 @@
+Port 22222
+
+Match User user
+	ForceCommand screen -DRR
