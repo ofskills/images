@@ -1,6 +1,6 @@
 FROM fedora:44
 
-RUN dnf install -y --setopt=install_weak_deps=False \
+RUN dnf install -y --allowerasing --setopt=install_weak_deps=False \
       systemd \
       systemd-libs \
       ca-certificates \
@@ -51,11 +51,14 @@ RUN useradd --create-home --shell /bin/bash user && \
     chmod 700 /home/user/.ssh
 COPY common/sshd_config /etc/ssh/sshd_config.d/user.conf
 
+RUN ansible-galaxy collection install community.general
+
 COPY common/ansible.yaml ansible.yaml
 RUN ansible-playbook -i localhost, ansible.yaml -c local && \
     rm ansible.yaml
 
 RUN : > /etc/machine-id && \
+    mkdir -p /var/lib/dbus && \
     rm -f /var/lib/dbus/machine-id && \
     ln -s /etc/machine-id /var/lib/dbus/machine-id
 
