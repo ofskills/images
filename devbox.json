@@ -3,7 +3,8 @@
   "packages": [
     "bashInteractive@latest",
     "python312@latest",
-    "python312Packages.ansible-core@latest"
+    "python312Packages.ansible-core@latest",
+    "act@latest"
   ],
   "shell": {
     "init_hook": [
