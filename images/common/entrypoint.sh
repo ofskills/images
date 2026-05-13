@@ -5,6 +5,10 @@ OVERLAY="/overlay-data"
 LOWER="/mnt/lower"
 MERGED="/mnt/merged"
 
+# Sysbox provides a non-empty /etc/machine-id at runtime, so ConditionFirstBoot=yes
+# never fires and sshd-keygen.service is skipped. Generate keys here instead.
+ssh-keygen -A >/dev/null
+
 # If /overlay-data is not a mount point (PVC not attached), skip overlay and boot directly.
 if ! mountpoint -q "$OVERLAY"; then
   exec /sbin/init --log-level=err
