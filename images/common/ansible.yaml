@@ -2,8 +2,8 @@
 - hosts: all
   become: yes
   vars:
-    lab_user: user
-    lab_user_home: /home/user
+    default_user: user
+    default_user_home: /home/user
 
     sudo_group:
       Debian: sudo
@@ -436,7 +436,7 @@
 
     - name: Create lab user
       ansible.builtin.user:
-        name: "{{ lab_user }}"
+        name: "{{ default_user }}"
         shell: /bin/bash
         create_home: yes
         groups: "{{ sudo_group[ansible_os_family] }}"
@@ -445,51 +445,51 @@
     - name: Sync .bashrc into user home
       ansible.builtin.copy:
         src: skel/.bashrc
-        dest: "{{ lab_user_home }}/.bashrc"
-        owner: "{{ lab_user }}"
-        group: "{{ lab_user }}"
+        dest: "{{ default_user_home }}/.bashrc"
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
         mode: '0644'
 
     - name: Sync .vimrc into user home
       ansible.builtin.copy:
         src: skel/.vimrc
-        dest: "{{ lab_user_home }}/.vimrc"
-        owner: "{{ lab_user }}"
-        group: "{{ lab_user }}"
+        dest: "{{ default_user_home }}/.vimrc"
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
         mode: '0644'
 
     - name: Sync .inputrc into user home
       ansible.builtin.copy:
         src: skel/.inputrc
-        dest: "{{ lab_user_home }}/.inputrc"
-        owner: "{{ lab_user }}"
-        group: "{{ lab_user }}"
+        dest: "{{ default_user_home }}/.inputrc"
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
         mode: '0644'
 
     - name: Sync .bash_profile into user home (RHEL/SUSE/Arch)
       ansible.builtin.copy:
         src: skel/.bash_profile
-        dest: "{{ lab_user_home }}/.bash_profile"
-        owner: "{{ lab_user }}"
-        group: "{{ lab_user }}"
+        dest: "{{ default_user_home }}/.bash_profile"
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
         mode: '0644'
       when: ansible_os_family in ['RedHat', 'Suse', 'Archlinux']
 
     - name: Sync .profile into user home (Debian)
       ansible.builtin.copy:
         src: skel/.profile
-        dest: "{{ lab_user_home }}/.profile"
-        owner: "{{ lab_user }}"
-        group: "{{ lab_user }}"
+        dest: "{{ default_user_home }}/.profile"
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
         mode: '0644'
       when: ansible_os_family == 'Debian'
 
     - name: Ensure user .ssh directory
       ansible.builtin.file:
-        path: "{{ lab_user_home }}/.ssh"
+        path: "{{ default_user_home }}/.ssh"
         state: directory
-        owner: "{{ lab_user }}"
-        group: "{{ lab_user }}"
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
         mode: '0700'
 
     - name: Lock root password
@@ -499,8 +499,8 @@
 
     - name: NOPASSWD sudoers drop-in for lab user
       ansible.builtin.copy:
-        dest: "/etc/sudoers.d/10-{{ lab_user }}"
-        content: "{{ lab_user }} ALL=(ALL) NOPASSWD: ALL\n"
+        dest: "/etc/sudoers.d/10-{{ default_user }}"
+        content: "{{ default_user }} ALL=(ALL) NOPASSWD: ALL\n"
         owner: root
         group: root
         mode: '0440'
@@ -579,6 +579,6 @@
         - /root/.bash_history
         - /root/.viminfo
         - /root/.lesshst
-        - "{{ lab_user_home }}/.bash_history"
-        - "{{ lab_user_home }}/.viminfo"
-        - "{{ lab_user_home }}/.lesshst"
+        - "{{ default_user_home }}/.bash_history"
+        - "{{ default_user_home }}/.viminfo"
+        - "{{ default_user_home }}/.lesshst"
