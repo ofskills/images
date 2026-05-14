@@ -50,4 +50,6 @@ for fs in /etc/hosts /home/user/.ssh/authorized_keys; do
   fi
 done
 
+echo "entrypoint diag pre-init: kernel=$(cat /proc/sys/kernel/hostname) etc=$(cat /etc/hostname)" >&2
+
 exec /sbin/init --log-level=err
