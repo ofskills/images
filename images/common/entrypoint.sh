@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-echo "entrypoint diag: kernel=$(cat /proc/sys/kernel/hostname) etc=$(cat /etc/hostname)" >&2
-
 OVERLAY="/overlay-data"
 LOWER="/mnt/lower"
 MERGED="/mnt/merged"
@@ -49,7 +47,5 @@ for fs in /etc/hosts /etc/hostname /home/user/.ssh/authorized_keys; do
     mount --move /mnt/old_root/$fs /$fs
   fi
 done
-
-echo "entrypoint diag pre-init: kernel=$(cat /proc/sys/kernel/hostname) etc=$(cat /etc/hostname)" >&2
 
 exec /sbin/init --log-level=err
