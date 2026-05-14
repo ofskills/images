@@ -93,6 +93,7 @@
         - gnupg2
         - grep
         - gzip
+        - hostname
         - htop
         - info
         - iproute
@@ -144,6 +145,7 @@
         - gptfdisk
         - grep
         - gzip
+        - hostname
         - htop
         - info
         - iproute2
@@ -196,6 +198,7 @@
         - grep
         - gzip
         - htop
+        - inetutils
         - iproute2
         - iputils
         - jq
