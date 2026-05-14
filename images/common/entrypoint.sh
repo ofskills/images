@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+echo "entrypoint diag: kernel=$(cat /proc/sys/kernel/hostname) etc=$(cat /etc/hostname)" >&2
+
 OVERLAY="/overlay-data"
 LOWER="/mnt/lower"
 MERGED="/mnt/merged"
