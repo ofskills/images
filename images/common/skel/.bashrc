@@ -23,3 +23,5 @@ if ! shopt -oq posix; then
         . /etc/bash_completion
     fi
 fi
+
+[ -f /etc/motd ] && cat /etc/motd

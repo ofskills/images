@@ -70,6 +70,7 @@
         - traceroute
         - unzip
         - util-linux
+        - util-linux-extra
         - vim
         - wget
         - xfsprogs
@@ -282,6 +283,13 @@
       ansible.builtin.package:
         name: "{{ base_packages[ansible_os_family] }}"
         state: present
+
+    - name: Neutralise screen 5.x-incompatible directives in /etc/screenrc
+      ansible.builtin.replace:
+        path: /etc/screenrc
+        regexp: '^(bind I login on|bind O login off|deflogin on)$'
+        replace: '# \1'
+      failed_when: false
 
     - name: Enable en_GB.UTF-8 in locale.gen (Debian)
       ansible.builtin.lineinfile:
