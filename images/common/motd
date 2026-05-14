@@ -1,14 +1,12 @@
-Welcome to the ofskills exam lab.
+Welcome to your exam task environment.
 
-This is an unprivileged Sysbox-style container running systemd as PID 1.
+This is a system container running systemd as PID 1.
 
 Deviations from a baremetal install:
   * Time sync (chrony/systemd-timesyncd) is masked; the host clock is authoritative.
   * Auditd, systemd-udevd, NetworkManager and systemd-modules-load are masked.
   * Block devices, kernel modules and most host-global sysctls are unavailable.
-  * No firewall (firewalld/ufw/nftables) is installed.
   * Root account is locked; use `sudo -i` for a root shell.
   * `sudo` is configured NOPASSWD for the `user` account.
 
 Run `systemctl list-unit-files --state=masked` to inspect masked units.
-
