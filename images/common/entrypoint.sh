@@ -44,7 +44,7 @@ cd "$MERGED"
 pivot_root . mnt/old_root
 
 # Move virtual files from old root to new root.
-for fs in /etc/hosts /home/user/.ssh/authorized_keys; do
+for fs in /etc/hosts /etc/hostname /home/user/.ssh/authorized_keys; do
   if mountpoint -q /mnt/old_root/$fs; then
     mount --move /mnt/old_root/$fs /$fs
   fi
