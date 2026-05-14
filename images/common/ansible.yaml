@@ -1,54 +1,584 @@
 ---
 - hosts: all
   become: yes
+  vars:
+    lab_user: user
+    lab_user_home: /home/user
+
+    sudo_group:
+      Debian: sudo
+      RedHat: wheel
+      Suse: wheel
+      Archlinux: wheel
+
+    cron_service:
+      Debian: cron.service
+      RedHat: crond.service
+      Suse: cron.service
+      Archlinux: cronie.service
+
+    ssh_service:
+      Debian: ssh.service
+      RedHat: sshd.service
+      Suse: sshd.service
+      Archlinux: sshd.service
+
+    base_packages:
+      Debian:
+        - bash
+        - bash-completion
+        - bind9-dnsutils
+        - bzip2
+        - coreutils
+        - cron
+        - curl
+        - dosfstools
+        - e2fsprogs
+        - gawk
+        - gdisk
+        - git
+        - gnupg
+        - grep
+        - gzip
+        - htop
+        - info
+        - iproute2
+        - iputils-ping
+        - jq
+        - less
+        - lsof
+        - lvm2
+        - man-db
+        - manpages
+        - mdadm
+        - mtr-tiny
+        - nano
+        - netcat-openbsd
+        - openssh-client
+        - openssh-server
+        - openssl
+        - parted
+        - procps
+        - rsync
+        - screen
+        - sed
+        - strace
+        - sudo
+        - sysstat
+        - tar
+        - tcpdump
+        - traceroute
+        - unzip
+        - util-linux
+        - vim
+        - wget
+        - xfsprogs
+        - xz-utils
+        - zstd
+      RedHat:
+        - bash
+        - bash-completion
+        - bind-utils
+        - bzip2
+        - coreutils
+        - cronie
+        - crontabs
+        - curl
+        - dosfstools
+        - e2fsprogs
+        - gawk
+        - gdisk
+        - git
+        - gnupg2
+        - grep
+        - gzip
+        - htop
+        - info
+        - iproute
+        - iputils
+        - jq
+        - less
+        - lsof
+        - lvm2
+        - man-db
+        - man-pages
+        - mdadm
+        - mtr
+        - nano
+        - nmap-ncat
+        - openssh-clients
+        - openssh-server
+        - openssl
+        - parted
+        - procps-ng
+        - rsync
+        - screen
+        - sed
+        - strace
+        - sudo
+        - sysstat
+        - tar
+        - tcpdump
+        - traceroute
+        - unzip
+        - util-linux
+        - vim-enhanced
+        - wget
+        - xfsprogs
+        - xz
+        - zstd
+      Suse:
+        - bash
+        - bash-completion
+        - bind-utils
+        - bzip2
+        - coreutils
+        - cronie
+        - curl
+        - dosfstools
+        - e2fsprogs
+        - gawk
+        - git-core
+        - gpg2
+        - gptfdisk
+        - grep
+        - gzip
+        - htop
+        - info
+        - iproute2
+        - iputils
+        - jq
+        - less
+        - lsof
+        - lvm2
+        - man
+        - man-pages
+        - mdadm
+        - mtr
+        - nano
+        - netcat-openbsd
+        - openssh-clients
+        - openssh-server
+        - openssl
+        - parted
+        - procps
+        - rsync
+        - screen
+        - sed
+        - strace
+        - sudo
+        - sysstat
+        - tar
+        - tcpdump
+        - traceroute
+        - unzip
+        - util-linux
+        - vim
+        - wget
+        - xfsprogs
+        - xz
+        - zstd
+      Archlinux:
+        - bash
+        - bash-completion
+        - bind
+        - bzip2
+        - coreutils
+        - cronie
+        - curl
+        - dosfstools
+        - e2fsprogs
+        - gawk
+        - git
+        - gnupg
+        - gptfdisk
+        - grep
+        - gzip
+        - htop
+        - iproute2
+        - iputils
+        - jq
+        - less
+        - lsof
+        - lvm2
+        - man-db
+        - man-pages
+        - mdadm
+        - mtr
+        - nano
+        - openbsd-netcat
+        - openssh
+        - openssl
+        - parted
+        - procps-ng
+        - rsync
+        - screen
+        - sed
+        - strace
+        - sudo
+        - sysstat
+        - tar
+        - tcpdump
+        - texinfo
+        - traceroute
+        - unzip
+        - util-linux
+        - vim
+        - wget
+        - xfsprogs
+        - xz
+        - zstd
+
+    masked_units:
+      - apt-daily-upgrade.service
+      - apt-daily-upgrade.timer
+      - apt-daily.service
+      - apt-daily.timer
+      - auditd.service
+      - chronyd.service
+      - dnf-makecache.service
+      - dnf-makecache.timer
+      - e2scrub_all.timer
+      - e2scrub_reap.service
+      - NetworkManager.service
+      - purge-kernels.service
+      - sys-kernel-config.mount
+      - sys-kernel-debug.mount
+      - sys-kernel-tracing.mount
+      - systemd-modules-load.service
+      - systemd-timesyncd.service
+      - systemd-udevd.service
+      - unattended-upgrades.service
+
   tasks:
-    - name: Update package cache
-      block:
-        - name: Update apt cache
-          ansible.builtin.apt:
-            update_cache: yes
-            cache_valid_time: 3600
-            force_apt_get: yes
-          when: ansible_pkg_mgr == 'apt'
+    - name: Refresh apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        force_apt_get: yes
+      when: ansible_pkg_mgr == 'apt'
 
-        - name: Update dnf cache
-          ansible.builtin.dnf:
-            update_cache: yes
-          when: ansible_pkg_mgr == 'dnf'
+    - name: Refresh dnf cache
+      ansible.builtin.dnf:
+        update_cache: yes
+      when: ansible_pkg_mgr == 'dnf'
 
-        - name: Update dnf5 cache
-          ansible.builtin.command: dnf5 makecache
-          changed_when: false
-          when: ansible_pkg_mgr == 'dnf5'
+    - name: Refresh dnf5 cache
+      ansible.builtin.command: dnf5 makecache
+      changed_when: false
+      when: ansible_pkg_mgr == 'dnf5'
 
-        - name: Update pacman cache
-          community.general.pacman:
-            update_cache: yes
-          when: ansible_pkg_mgr == 'pacman'
+    - name: Refresh pacman cache
+      community.general.pacman:
+        update_cache: yes
+      when: ansible_pkg_mgr == 'pacman'
 
-        - name: Update zypper cache
-          ansible.builtin.command: zypper --non-interactive refresh
-          changed_when: false
-          when: ansible_pkg_mgr == 'zypper'
+    - name: Refresh zypper cache
+      ansible.builtin.command: zypper --non-interactive refresh
+      changed_when: false
+      when: ansible_pkg_mgr == 'zypper'
 
-    - name: Install required packages
+    - name: Install base packages
       ansible.builtin.package:
-        name:
-          - screen
-          - vim
+        name: "{{ base_packages[ansible_os_family] }}"
         state: present
 
-    - name: Create required directories
+    - name: Enable en_GB.UTF-8 in locale.gen (Debian)
+      ansible.builtin.lineinfile:
+        path: /etc/locale.gen
+        regexp: '^[#\s]*en_GB\.UTF-8 UTF-8'
+        line: 'en_GB.UTF-8 UTF-8'
+      when: ansible_os_family == 'Debian'
+
+    - name: Generate locale (Debian)
+      ansible.builtin.command: locale-gen en_GB.UTF-8
+      changed_when: false
+      when: ansible_os_family == 'Debian'
+
+    - name: Set default locale (Debian)
+      ansible.builtin.copy:
+        dest: /etc/default/locale
+        content: "LANG=en_GB.UTF-8\n"
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family == 'Debian'
+
+    - name: Enable en_GB.UTF-8 in locale.gen (Arch)
+      ansible.builtin.lineinfile:
+        path: /etc/locale.gen
+        regexp: '^[#\s]*en_GB\.UTF-8 UTF-8'
+        line: 'en_GB.UTF-8 UTF-8'
+      when: ansible_os_family == 'Archlinux'
+
+    - name: Generate locale (Arch)
+      ansible.builtin.command: locale-gen
+      changed_when: false
+      when: ansible_os_family == 'Archlinux'
+
+    - name: Persist locale (Arch / RedHat / Suse)
+      ansible.builtin.copy:
+        dest: /etc/locale.conf
+        content: "LANG=en_GB.UTF-8\n"
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family in ['Archlinux', 'RedHat', 'Suse']
+
+    - name: Link /etc/localtime to UTC
+      ansible.builtin.file:
+        src: /usr/share/zoneinfo/UTC
+        dest: /etc/localtime
+        state: link
+        force: yes
+
+    - name: Persist timezone name
+      ansible.builtin.copy:
+        dest: /etc/timezone
+        content: "UTC\n"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Persistent journal directory
+      ansible.builtin.file:
+        path: /var/log/journal
+        state: directory
+        owner: root
+        group: systemd-journal
+        mode: '2755'
+
+    - name: Ensure journald drop-in directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Persistent journal drop-in
+      ansible.builtin.copy:
+        dest: /etc/systemd/journald.conf.d/10-persistent.conf
+        content: |
+          [Journal]
+          Storage=persistent
+          SystemMaxUse=500M
+          Compress=yes
+          ReadKMsg=no
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop legacy ReadKMsg-only journald drop-in
+      ansible.builtin.file:
+        path: /etc/systemd/journald.conf.d/00-no-kmsg.conf
+        state: absent
+
+    - name: Mask host-only systemd units
+      ansible.builtin.shell: "systemctl mask {{ item }} || true"
+      changed_when: false
+      loop: "{{ masked_units }}"
+
+    - name: Ensure admin group exists
+      ansible.builtin.group:
+        name: "{{ sudo_group[ansible_os_family] }}"
+        state: present
+
+    - name: Drop /etc/skel/.bashrc
+      ansible.builtin.copy:
+        src: skel/.bashrc
+        dest: /etc/skel/.bashrc
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop /etc/skel/.vimrc
+      ansible.builtin.copy:
+        src: skel/.vimrc
+        dest: /etc/skel/.vimrc
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop /etc/skel/.inputrc
+      ansible.builtin.copy:
+        src: skel/.inputrc
+        dest: /etc/skel/.inputrc
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop /etc/skel/.bash_profile (RHEL/SUSE/Arch)
+      ansible.builtin.copy:
+        src: skel/.bash_profile
+        dest: /etc/skel/.bash_profile
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family in ['RedHat', 'Suse', 'Archlinux']
+
+    - name: Drop /etc/skel/.profile (Debian)
+      ansible.builtin.copy:
+        src: skel/.profile
+        dest: /etc/skel/.profile
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family == 'Debian'
+
+    - name: Ensure /etc/skel/.ssh exists
+      ansible.builtin.file:
+        path: /etc/skel/.ssh
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Create lab user
+      ansible.builtin.user:
+        name: "{{ lab_user }}"
+        shell: /bin/bash
+        create_home: yes
+        groups: "{{ sudo_group[ansible_os_family] }}"
+        append: yes
+
+    - name: Sync .bashrc into user home
+      ansible.builtin.copy:
+        src: skel/.bashrc
+        dest: "{{ lab_user_home }}/.bashrc"
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: '0644'
+
+    - name: Sync .vimrc into user home
+      ansible.builtin.copy:
+        src: skel/.vimrc
+        dest: "{{ lab_user_home }}/.vimrc"
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: '0644'
+
+    - name: Sync .inputrc into user home
+      ansible.builtin.copy:
+        src: skel/.inputrc
+        dest: "{{ lab_user_home }}/.inputrc"
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: '0644'
+
+    - name: Sync .bash_profile into user home (RHEL/SUSE/Arch)
+      ansible.builtin.copy:
+        src: skel/.bash_profile
+        dest: "{{ lab_user_home }}/.bash_profile"
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: '0644'
+      when: ansible_os_family in ['RedHat', 'Suse', 'Archlinux']
+
+    - name: Sync .profile into user home (Debian)
+      ansible.builtin.copy:
+        src: skel/.profile
+        dest: "{{ lab_user_home }}/.profile"
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: '0644'
+      when: ansible_os_family == 'Debian'
+
+    - name: Ensure user .ssh directory
+      ansible.builtin.file:
+        path: "{{ lab_user_home }}/.ssh"
+        state: directory
+        owner: "{{ lab_user }}"
+        group: "{{ lab_user }}"
+        mode: '0700'
+
+    - name: Lock root password
+      ansible.builtin.user:
+        name: root
+        password_lock: yes
+
+    - name: NOPASSWD sudoers drop-in for lab user
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/10-{{ lab_user }}"
+        content: "{{ lab_user }} ALL=(ALL) NOPASSWD: ALL\n"
+        owner: root
+        group: root
+        mode: '0440'
+        validate: 'visudo -cf %s'
+
+    - name: Neutralise openSUSE Defaults targetpw
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/00-no-targetpw
+        content: |
+          Defaults !targetpw
+          Defaults !rootpw
+          Defaults !runaspw
+        owner: root
+        group: root
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      when: ansible_os_family == 'Suse'
+
+    - name: Drop neutral MOTD
+      ansible.builtin.copy:
+        src: motd
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop sshd lab drop-in
+      ansible.builtin.copy:
+        src: sshd_lab.conf
+        dest: /etc/ssh/sshd_config.d/00-lab.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Drop sshd user drop-in (force screen)
+      ansible.builtin.copy:
+        src: sshd_config
+        dest: /etc/ssh/sshd_config.d/user.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Install entrypoint
+      ansible.builtin.copy:
+        src: entrypoint.sh
+        dest: /usr/local/bin/entrypoint.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Remove baked SSH host keys
+      ansible.builtin.shell: rm -f /etc/ssh/ssh_host_*_key*
+      changed_when: false
+
+    - name: Create /run/screen
       ansible.builtin.file:
         path: /run/screen
         state: directory
         mode: '0777'
 
-    - name: Ensure the 'user' account can run sudo commands without a password
-      ansible.builtin.copy:
-        dest: /etc/sudoers.d/user
-        content: |
-          user ALL=(ALL) NOPASSWD: ALL
-        mode: '0440'
-        owner: root
-        group: root
+    - name: Enable cron
+      ansible.builtin.systemd:
+        name: "{{ cron_service[ansible_os_family] }}"
+        enabled: yes
+
+    - name: Enable sshd
+      ansible.builtin.systemd:
+        name: "{{ ssh_service[ansible_os_family] }}"
+        enabled: yes
+
+    - name: Wipe history artifacts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /root/.bash_history
+        - /root/.viminfo
+        - /root/.lesshst
+        - "{{ lab_user_home }}/.bash_history"
+        - "{{ lab_user_home }}/.viminfo"
+        - "{{ lab_user_home }}/.lesshst"
