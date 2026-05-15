@@ -1,6 +1,11 @@
 ---
 - hosts: all
   become: yes
+  vars:
+    arch_map:
+      x86_64: amd64
+      aarch64: arm64
+    k8s_arch: "{{ arch_map[ansible_architecture] }}"
   tasks:
     - name: Install kubectl bash completion
       ansible.builtin.shell: kubectl completion bash > /etc/bash_completion.d/kubectl
@@ -8,3 +13,139 @@
         KUBECONFIG: /dev/null
       args:
         creates: /etc/bash_completion.d/kubectl
+
+    - name: Install fzf
+      ansible.builtin.apt:
+        name: fzf
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install k9s
+      ansible.builtin.apt:
+        deb: "https://github.com/derailed/k9s/releases/latest/download/k9s_linux_{{ k8s_arch }}.deb"
+
+    - name: Get latest stern release tag
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/stern/stern/releases/latest
+        return_content: yes
+      register: stern_release
+
+    - name: Download and extract stern
+      ansible.builtin.unarchive:
+        src: "https://github.com/stern/stern/releases/download/{{ stern_release.json.tag_name }}/stern_{{ stern_release.json.tag_name | regex_replace('^v', '') }}_linux_{{ k8s_arch }}.tar.gz"
+        dest: /usr/local/bin
+        remote_src: yes
+        creates: /usr/local/bin/stern
+
+    - name: Install stern bash completion
+      ansible.builtin.shell: stern --completion=bash > /etc/bash_completion.d/stern
+      args:
+        creates: /etc/bash_completion.d/stern
+
+    - name: Install yq
+      ansible.builtin.get_url:
+        url: "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_{{ k8s_arch }}"
+        dest: /usr/local/bin/yq
+        mode: '0755'
+
+    - name: Install yq bash completion
+      ansible.builtin.shell: yq completion bash > /etc/bash_completion.d/yq
+      args:
+        creates: /etc/bash_completion.d/yq
+
+    - name: Install helm via upstream script
+      ansible.builtin.shell: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Install helm bash completion
+      ansible.builtin.shell: helm completion bash > /etc/bash_completion.d/helm
+      args:
+        creates: /etc/bash_completion.d/helm
+
+    - name: Get latest crictl release tag
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/kubernetes-sigs/cri-tools/releases/latest
+        return_content: yes
+      register: crictl_release
+
+    - name: Download and extract crictl
+      ansible.builtin.unarchive:
+        src: "https://github.com/kubernetes-sigs/cri-tools/releases/download/{{ crictl_release.json.tag_name }}/crictl-{{ crictl_release.json.tag_name }}-linux-{{ k8s_arch }}.tar.gz"
+        dest: /usr/local/bin
+        remote_src: yes
+        creates: /usr/local/bin/crictl
+
+    - name: Clone kubectx repository
+      ansible.builtin.git:
+        repo: https://github.com/ahmetb/kubectx
+        dest: /opt/kubectx
+        depth: 1
+        version: master
+
+    - name: Drop kubectx .git directory
+      ansible.builtin.file:
+        path: /opt/kubectx/.git
+        state: absent
+
+    - name: Symlink kubectx and kubens binaries
+      ansible.builtin.file:
+        src: "/opt/kubectx/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        state: link
+      loop:
+        - kubectx
+        - kubens
+
+    - name: Symlink kubectx and kubens completions
+      ansible.builtin.file:
+        src: "/opt/kubectx/completion/{{ item }}.bash"
+        dest: "/etc/bash_completion.d/{{ item }}"
+        state: link
+      loop:
+        - kubectx
+        - kubens
+
+    - name: Install kube-ps1
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh
+        dest: /usr/local/share/kube-ps1.sh
+        mode: '0644'
+
+    - name: Add Kubernetes block to bashrc files
+      ansible.builtin.blockinfile:
+        path: "{{ item }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - kubernetes"
+        block: |
+          alias k=kubectl
+          complete -o default -F __start_kubectl k
+          alias kctx=kubectx
+          alias kns=kubens
+
+          alias kgp='kubectl get pods'
+          alias kgd='kubectl get deploy'
+          alias kgs='kubectl get svc'
+          alias kgn='kubectl get nodes -o wide'
+          alias kdp='kubectl describe pod'
+          alias kl='kubectl logs -f'
+          alias ke='kubectl exec -it'
+          alias kaf='kubectl apply -f'
+          alias kdf='kubectl delete -f'
+
+          [ -f /usr/local/share/kube-ps1.sh ] && {
+            source /usr/local/share/kube-ps1.sh
+            KUBE_PS1_HIDE_IF_NOCONTEXT=true
+            kube_ps1_ctx_color() {
+              case "$1" in
+                *prod*|*production*) echo red ;;
+                *stage*|*staging*)   echo yellow ;;
+                *)                   echo blue ;;
+              esac
+            }
+            KUBE_PS1_CTX_COLOR_FUNCTION=kube_ps1_ctx_color
+            PS1='$(kube_ps1) '"$PS1"
+          }
+      loop:
+        - /etc/skel/.bashrc
+        - /home/user/.bashrc
