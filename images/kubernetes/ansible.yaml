@@ -4,5 +4,7 @@
   tasks:
     - name: Install kubectl bash completion
       ansible.builtin.shell: kubectl completion bash > /etc/bash_completion.d/kubectl
+      environment:
+        KUBECONFIG: /dev/null
       args:
         creates: /etc/bash_completion.d/kubectl
