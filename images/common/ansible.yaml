@@ -294,6 +294,12 @@
         replace: '# \1'
       failed_when: false
 
+    - name: Rebind screen escape from Ctrl-A to Ctrl-T
+      ansible.builtin.lineinfile:
+        path: /etc/screenrc
+        regexp: '^escape\s+'
+        line: 'escape ^Tt'
+
     - name: Enable en_GB.UTF-8 in locale.gen (Debian)
       ansible.builtin.lineinfile:
         path: /etc/locale.gen
