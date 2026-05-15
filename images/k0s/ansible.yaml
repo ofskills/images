@@ -60,4 +60,33 @@
         dest: /usr/local/bin/kubectl
         state: link
 
+    - name: Install k0s user kubeconfig service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/k0s-user-kubeconfig.service
+        content: |
+          [Unit]
+          Description=Copy k0s kubeconfig to user home
+          After=k0scontroller.service
+          Wants=k0scontroller.service
+          ConditionPathExists=!/home/user/.kube/config
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStartPre=/bin/sh -c 'until [ -f /var/lib/k0s/pki/admin.conf ]; do sleep 1; done'
+          ExecStart=/usr/bin/install -d -m 700 -o user -g user /home/user/.kube
+          ExecStart=/usr/bin/install -m 600 -o user -g user /var/lib/k0s/pki/admin.conf /home/user/.kube/config
+
+          [Install]
+          WantedBy=multi-user.target
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable k0s user kubeconfig service for next boot
+      file:
+        src: /etc/systemd/system/k0s-user-kubeconfig.service
+        dest: /etc/systemd/system/multi-user.target.wants/k0s-user-kubeconfig.service
+        state: link
+
 - import_playbook: /opt/kubernetes/ansible.yaml
