@@ -31,7 +31,7 @@
           Wants=network-online.target
 
           [Service]
-          ExecStart=/usr/local/bin/k0s controller --config=/etc/k0s/k0s.yaml --enable-worker --no-taints
+          ExecStart=/usr/local/bin/k0s controller --config=/etc/k0s/k0s.yaml --enable-worker --no-taints --ignore-pre-flight-checks
           RestartSec=10
           Delegate=yes
           KillMode=process
