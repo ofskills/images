@@ -118,6 +118,8 @@
         path: "{{ item }}"
         marker: "# {mark} ANSIBLE MANAGED BLOCK - kubernetes"
         block: |
+          export KUBECONFIG="$HOME/.kube/config"
+
           alias k=kubectl
           complete -o default -F __start_kubectl k
           alias kctx=kubectx
