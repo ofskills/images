@@ -250,6 +250,7 @@
       - sys-kernel-debug.mount
       - sys-kernel-tracing.mount
       - systemd-modules-load.service
+      - systemd-sysctl.service
       - systemd-timesyncd.service
       - systemd-udevd.service
       - unattended-upgrades.service
