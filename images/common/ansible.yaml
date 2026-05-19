@@ -545,17 +545,25 @@
         group: root
         mode: '0644'
 
-    - name: Drop sshd lab drop-in
+    - name: Drop sshd base drop-in
       ansible.builtin.copy:
-        src: sshd_lab.conf
-        dest: /etc/ssh/sshd_config.d/00-lab.conf
+        src: sshd_base.conf
+        dest: /etc/ssh/sshd_config.d/00-base.conf
         owner: root
         group: root
         mode: '0644'
 
-    - name: Drop sshd user drop-in (force screen)
+    - name: Install sshd ForceCommand wrapper
       ansible.builtin.copy:
-        src: sshd_config
+        src: ssh_force_command.sh
+        dest: /usr/local/bin/ssh_force_command.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Drop sshd user drop-in (force command wrapper)
+      ansible.builtin.copy:
+        src: sshd_user.conf
         dest: /etc/ssh/sshd_config.d/user.conf
         owner: root
         group: root
